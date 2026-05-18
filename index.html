@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="MVP AI-ассистента для подготовки к ОГЭ/ЕГЭ. Персональная траектория, мгновенный разбор ошибок, доступный каждому.">
+  <meta name="theme-color" content="#4F46E5">
+  <title>AI-Репетитор MVP | Демо-прототип</title>
+  
+  <!-- ==========================================
+       CSS: Переменные, сброс, типографика, компоненты
+       ========================================== -->
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --secondary: #10B981;
+      --accent: #F59E0B;
+      --danger: #EF4444;
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --surface-hover: #F1F5F9;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --text-inverse: #FFFFFF;
+      --border: #E2E8F0;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --spacing-unit: 8px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0F172A;
+      --surface: #1E293B;
+      --surface-hover: #334155;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --text-inverse: #0F172A;
+      --border: #334155;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: var(--font-main);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: var(--transition);
+    }
+
+    a { color: var(--primary); text-decoration: none; transition: var(--transition); }
+    a:hover { text-decoration: underline; }
+    button {
+      font-family: inherit; cursor: pointer; border: none; background: transparent;
+      transition: var(--transition);
+    }
+    button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+    img, svg { display: block; max-width: 100%; height: auto; }
+    ul, ol { list-style: none; }
+
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+      min-height: 100vh;
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      .app-container { border-radius: var(--radius-xl); margin: 24px auto; min-height: 90vh; }
+    }
+
+    /* Навигация */
+    .nav-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+      backdrop-filter: blur(8px);
+    }
+    .nav-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+    .nav-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); color: var(--text-muted);
+    }
+    .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+    /* Экраны */
+    .screen {
+      display: none; padding: 16px; animation: fadeIn 0.35s ease forwards;
+    }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Компоненты */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px; margin-bottom: 16px;
+      box-shadow: var(--shadow-sm); transition: var(--transition);
+    }
+    .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .card-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
+    .card-desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 16px; background: var(--primary); color: var(--text-inverse);
+      border-radius: var(--radius-md); font-weight: 600; font-size: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: var(--bg); border-color: var(--primary); color: var(--primary); }
+    .btn-sm { padding: 8px 12px; font-size: 0.85rem; width: auto; }
+
+    .badge {
+      display: inline-flex; align-items: center; padding: 4px 8px;
+      background: #EEF2FF; color: var(--primary); border-radius: 99px;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em;
+    }
+    .badge-success { background: #D1FAE5; color: #065F46; }
+    .badge-warning { background: #FEF3C7; color: #92400E; }
+    .badge-danger { background: #FEE2E2; color: #991B1B; }
+
+    .progress-track { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin: 8px 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #818CF8); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); border-radius: 99px; }
+
+    .option {
+      padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-md);
+      margin-bottom: 10px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 10px;
+    }
+    .option:hover { background: var(--bg); border-color: var(--primary); }
+    .option.selected { border-color: var(--primary); background: #EEF2FF; font-weight: 500; }
+    .option-radio {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--text-muted);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .option.selected .option-radio { border-color: var(--primary); background: var(--primary); }
+    .option.selected .option-radio::after { content: ""; width: 6px; height: 6px; background: white; border-radius: 50%; }
+
+    .ai-box {
+      background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
+      border-left: 4px solid var(--primary); padding: 14px; border-radius: var(--radius-md);
+      margin-top: 12px; font-size: 0.92rem; line-height: 1.5;
+    }
+    [data-theme="dark"] .ai-box { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); }
+    .ai-box p { margin-bottom: 6px; }
+    .ai-box ul { padding-left: 18px; list-style: disc; margin-bottom: 8px; }
+    .ai-box li { margin-bottom: 4px; }
+    .tag {
+      display: inline-flex; padding: 2px 6px; background: var(--bg); border-radius: 4px;
+      font-size: 0.7rem; color: var(--text-muted); border: 1px solid var(--border); margin-top: 6px;
+    }
+
+    .typing-cursor::after { content: "|"; animation: blink 1s step-end infinite; color: var(--primary); font-weight: bold; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: var(--bg); padding: 12px; border-radius: var(--radius-md); text-align: center; }
+    .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    .topic-row {
+      display: flex; justify-content: space-between; align-items: center; padding: 10px 0;
+      border-bottom: 1px solid var(--border); cursor: pointer; transition: var(--transition);
+    }
+    .topic-row:last-child { border-bottom: none; }
+    .topic-row:hover { color: var(--primary); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    .dot-error { background: var(--danger); } .dot-warn { background: var(--accent); } .dot-ok { background: var(--secondary); }
+
+    .chart-container { height: 180px; background: var(--bg); border-radius: var(--radius-md); margin: 12px 0; position: relative; overflow: hidden; }
+    .chart-bar { position: absolute; bottom: 0; background: var(--primary); width: 20%; border-radius: 4px 4px 0 0; transition: height 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .chart-label { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 0.7rem; color: var(--text-muted); }
+
+    .streak-fire { color: #F59E0B; font-size: 1.2rem; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--surface); border: 1px solid var(--border); padding: 12px 16px;
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); z-index: 200;
+      display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+    .toast-success .toast-icon { background: var(--secondary); }
+    .toast-error .toast-icon { background: var(--danger); }
+
+    .footer-note { text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-top: 32px; padding-bottom: 40px; line-height: 1.4; }
+    .footer-note a { color: var(--primary); text-decoration: none; }
+    .footer-note a:hover { text-decoration: underline; }
+
+    /* Утилиты */
+    .text-center { text-align: center; }
+    .mt-2 { margin-top: 8px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+    .mb-2 { margin-bottom: 8px; } .mb-4 { margin-bottom: 16px; }
+    .hidden { display: none !important; }
+    .skeleton { background: linear-gradient(90deg, var(--bg) 25%, var(--surface-hover) 50%, var(--bg) 75%); animation: shimmer 1.5s infinite; border-radius: 4px; }
+    @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Навигация -->
+  <header class="nav-bar">
+    <div class="nav-title">AI-Репетитор</div>
+    <div class="nav-actions">
+      <button class="icon-btn" id="theme-toggle" aria-label="Переключить тему">🌓</button>
+      <button class="icon-btn" id="profile-btn" aria-label="Профиль">👤</button>
+    </div>
+  </header>
+
+  <!-- Экран 1: Welcome / Onboarding -->
+  <section id="screen-welcome" class="screen active">
+    <div class="card text-center mt-6">
+      <div style="font-size: 3rem; margin-bottom: 12px;">🎓</div>
+      <h1 style="font-size: 1.6rem; margin-bottom: 8px;">AI-Репетитор в кармане</h1>
+      <p class="card-desc">Персональная траектория, мгновенный разбор ошибок, доступный каждому.</p>
+      <div class="badge badge-success">MVP v1.0</div>
+    </div>
+    <div class="card">
+      <h2 class="card-title">📋 Что вас ждёт?</h2>
+      <ul style="padding-left: 18px; list-style: disc; color: var(--text-muted); font-size: 0.9rem;">
+        <li>Входная диагностика за 5 минут</li>
+        <li>AI-разбор ошибок с алгоритмами и примерами</li>
+        <li>Динамический план подготовки</li>
+        <li>Трекер прогресса и геймификация</li>
+      </ul>
+    </div>
+    <button class="btn" onclick="App.router.navigate('dashboard')">Начать подготовку →</button>
+    <p class="footer-note mt-4">
+      Демо-прототип интерфейса.<br>
+      В пилотной версии подключается YandexGPT + RAG-база ФИПИ.<br>
+      <a href="https://github.com/yourusername/edu-ai-mvp-demo" target="_blank">Исходный код</a>
+    </p>
+  </section>
+
+  <!-- Экран 2: Dashboard -->
+  <section id="screen-dashboard" class="screen">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">🔥 Дней подряд</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-xp">0</div>
+        <div class="stat-label">⭐ XP</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h2 class="card-title">🗺 Мой путь</h2>
+        <span class="badge" id="level-badge">Ур. 1</span>
+      </div>
+      <p class="card-desc">Математика • 10 класс • ОГЭ</p>
+      <div class="topic-row" data-topic="linear" onclick="App.router.navigate('diagnostic', {subject: 'math'})">
+        <span><span class="status-dot dot-warn"></span> Линейные уравнения</span>
+        <span style="font-weight:600;">65%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width: 65%;"></div></div>
+      
+      <div class="topic-row mt-4" data-topic="derivatives" onclick="App.router.navigate('diagnostic', {subject: 'math'})">
+        <span><span class="status-dot dot-error"></span> Производные</span>
+        <span style="font-weight:600;">42%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width: 42%; background: var(--danger);"></div></div>
+      
+      <div class="topic-row mt-4" data-topic="trig" onclick="App.router.navigate('diagnostic', {subject: 'math'})">
+        <span><span class="status-dot dot-ok"></span> Тригонометрия</span>
+        <span style="font-weight:600;">89%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width: 89%;"></div></div>
+    </div>
+    <button class="btn btn-outline mt-2" onclick="App.router.navigate('plan')">📅 Открыть план подготовки</button>
+    <button class="btn mt-2" onclick="App.router.navigate('diagnostic')">🚀 Начать новую диагностику</button>
+  </section>
+
+  <!-- Экран 3: Diagnostic Test -->
+  <section id="screen-diagnostic" class="screen">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 class="card-title">📊 Входная диагностика</h2>
+        <span class="badge" id="test-progress">1/5</span>
+      </div>
+      <div id="question-container">
+        <!-- Динамически заполняется JS -->
+      </div>
+      <div class="progress-track mt-4">
+        <div class="progress-fill" id="test-bar" style="width: 20%;"></div>
+      </div>
+    </div>
+    <button class="btn" id="btn-check-answer" disabled onclick="App.testEngine.checkAnswer()">Проверить ответ</button>
+    <button class="btn btn-outline mt-2" onclick="App.router.back()">← Назад</button>
+  </section>
+
+  <!-- Экран 4: AI Explanation & Results -->
+  <section id="screen-ai-tutor" class="screen">
+    <div class="card">
+      <h2 class="card-title">🧠 AI-разбор ошибки</h2>
+      <div class="ai-box" id="ai-response">
+        <!-- Динамически заполняется JS -->
+      </div>
+      <div class="mt-4">
+        <h3 class="card-title" style="font-size:1rem;">📝 Закрепление</h3>
+        <p class="card-desc">Решите похожее задание, чтобы закрыть пробел.</p>
+        <div id="practice-question"></div>
+      </div>
+    </div>
+    <button class="btn" onclick="App.gamification.addXP(50); App.toast.show('Задание выполнено! +50 XP', 'success'); App.router.navigate('dashboard');">
+      Завершить и вернуться на главную
+    </button>
+  </section>
+
+  <!-- Экран 5: Study Plan -->
+  <section id="screen-plan" class="screen">
+    <div class="card">
+      <h2 class="card-title">📅 Персональный план</h2>
+      <p class="card-desc">Динамическое расписание с учётом ваших слабых зон и дедлайна экзамена.</p>
+      <div id="plan-list"></div>
+    </div>
+    <button class="btn" onclick="App.router.navigate('progress')">📈 Смотреть аналитику</button>
+    <button class="btn btn-outline mt-2" onclick="App.router.back()">← Назад</button>
+  </section>
+
+  <!-- Экран 6: Progress & Analytics -->
+  <section id="screen-progress" class="screen">
+    <div class="card">
+      <h2 class="card-title">📊 Прогресс подготовки</h2>
+      <div class="chart-container" id="progress-chart">
+        <!-- Динамически рисуется JS -->
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value">+12%</div>
+        <div class="stat-label">Прирост за неделю</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">4.2</div>
+        <div class="stat-label">Средний балл</div>
+      </div>
+    </div>
+    <button class="btn" onclick="App.router.navigate('dashboard')">Вернуться к пути</button>
+  </section>
+
+  <!-- Экран 7: Settings -->
+  <section id="screen-settings" class="screen">
+    <div class="card">
+      <h2 class="card-title">⚙️ Настройки</h2>
+      <div class="topic-row" onclick="App.theme.toggle()">
+        <span>🌓 Тёмная тема</span>
+        <span id="theme-status" class="badge">Выключена</span>
+      </div>
+      <div class="topic-row" onclick="App.toast.show('Уведомления включены', 'success')">
+        <span>🔔 Напоминания</span>
+        <span class="badge badge-success">Вкл</span>
+      </div>
+      <div class="topic-row" onclick="App.toast.show('Кэши очищены', 'success')">
+        <span>🗑 Очистить данные</span>
+        <span class="badge badge-danger">Сброс</span>
+      </div>
+    </div>
+    <button class="btn btn-outline" onclick="App.router.back()">← Назад</button>
+  </section>
+
+  <!-- Toast Container -->
+  <div class="toast" id="toast-container">
+    <div class="toast-icon">✓</div>
+    <span id="toast-message">Успешно</span>
+  </div>
+</div>
+
+<!-- ==========================================
+     JAVASCRIPT: Архитектура, состояние, роутер, AI, геймификация
+     ========================================== -->
+<script>
+/**
+ * AI-Tutor MVP Demo Engine
+ * Архитектура: Vanilla JS SPA, State Manager, Mock AI, LocalStorage, Router, UI Components
+ * Совместимо с современными браузерами. Не требует сборки.
+ */
+
+const App = {
+  state: {
+    currentScreen: 'welcome',
+    history: ['welcome'],
+    theme: 'light',
+    user: {
+      name: 'Ученик',
+      level: 1,
+      xp: 0,
+      streak: 0,
+      lastLogin: new Date().toDateString(),
+      topics: {
+        linear: 65,
+        derivatives: 42,
+        trig: 89
+      }
+    },
+    test: {
+      current: 0,
+      answers: [],
+      score: 0
+    },
+    settings: {
+      notifications: true,
+      sound: true
+    }
+  },
+
+  // Инициализация при загрузке DOM
+  init() {
+    this.storage.load();
+    this.theme.apply();
+    this.router.navigate(this.state.currentScreen);
+    this.updateDashboard();
+    this.plan.generate();
+    this.chart.draw();
+    this.streak.check();
+    console.log('✅ AI-Tutor MVP Demo initialized');
+  },
+
+  // Управление состоянием и роутингом
+  router: {
+    navigate(screenId, params = {}) {
+      if (!document.getElementById(`screen-${screenId}`)) {
+        console.warn(`Screen not found: ${screenId}`);
+        return;
+      }
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.getElementById(`screen-${screenId}`).classList.add('active');
+      App.state.history.push(App.state.currentScreen);
+      App.state.currentScreen = screenId;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Хуки при переходе
+      if (screenId === 'diagnostic') App.testEngine.init();
+      if (screenId === 'plan') App.plan.generate();
+      if (screenId === 'progress') App.chart.draw();
+    },
+    back() {
+      const prev = App.state.history.pop() || 'dashboard';
+      this.navigate(prev);
+    }
+  },
+
+  // Хранилище (LocalStorage с fallback)
+  storage: {
+    key: 'ai_tutor_mvp_v1',
+    save() {
+      try {
+        localStorage.setItem(this.key, JSON.stringify(App.state));
+      } catch (e) {
+        console.warn('LocalStorage unavailable', e);
+      }
+    },
+    load() {
+      try {
+        const data = localStorage.getItem(this.key);
+        if (data) {
+          const parsed = JSON.parse(data);
+          Object.assign(App.state, parsed);
+        }
+      } catch (e) { console.warn('Load failed', e); }
+    }
+  },
+
+  // Тема оформления
+  theme: {
+    toggle() {
+      App.state.theme = App.state.theme === 'light' ? 'dark' : 'light';
+      this.apply();
+      App.storage.save();
+      App.toast.show(`Тема: ${App.state.theme === 'light' ? 'Светлая' : 'Тёмная'}`, 'success');
+    },
+    apply() {
+      document.documentElement.setAttribute('data-theme', App.state.theme);
+      const statusEl = document.getElementById('theme-status');
+      if (statusEl) statusEl.textContent = App.state.theme === 'light' ? 'Выключена' : 'Включена';
+    }
+  },
+
+  // Геймификация
+  gamification: {
+    addXP(amount) {
+      App.state.user.xp += amount;
+      const needed = App.state.user.level * 100;
+      if (App.state.user.xp >= needed) {
+        App.state.user.xp -= needed;
+        App.state.user.level++;
+        App.toast.show(`🎉 Новый уровень: ${App.state.user.level}!`, 'success');
+      }
+      App.updateDashboard();
+      App.storage.save();
+    },
+    updateStreak() {
+      const today = new Date().toDateString();
+      if (App.state.user.lastLogin !== today) {
+        const last = new Date(App.state.user.lastLogin);
+        const diff = (new Date() - last) / (1000 * 60 * 60 * 24);
+        App.state.user.streak = diff <= 2 ? App.state.user.streak + 1 : 1;
+        App.state.user.lastLogin = today;
+        App.storage.save();
+      }
+    }
+  },
+
+  // Уведомления
+  toast: {
+    el: null,
+    timeout: null,
+    init() { this.el = document.getElementById('toast-container'); },
+    show(msg, type = 'success') {
+      if (!this.el) this.init();
+      this.el.querySelector('#toast-message').textContent = msg;
+      this.el.className = `toast toast-${type} show`;
+      clearTimeout(this.timeout);
+      this.timeout = setTimeout(() => this.el.classList.remove('show'), 3000);
+    }
+  },
+
+  // Обновление дашборда
+  updateDashboard() {
+    const { xp, level, streak } = App.state.user;
+    document.getElementById('stat-xp').textContent = xp;
+    document.getElementById('stat-streak').textContent = streak;
+    document.getElementById('level-badge').textContent = `Ур. ${level}`;
+  },
+
+  // Проверка стрика
+  streak: {
+    check() {
+      App.gamification.updateStreak();
+      if (App.state.user.streak > 0) {
+        setTimeout(() => App.toast.show(`🔥 Серия: ${App.state.user.streak} дн.`, 'success'), 1000);
+      }
+    }
+  },
+
+  // Движок тестирования
+  testEngine: {
+    pool: [
+      { q: 'Решите: 2x + 5 = 13', opts: ['x = 3', 'x = 4', 'x = 5', 'x = 6'], correct: 1, topic: 'linear' },
+      { q: 'Найдите производную f(x) = x²', opts: ['f\'(x) = 2x', 'f\'(x) = x', 'f\'(x) = 2', 'f\'(x) = 2x²'], correct: 0, topic: 'derivatives' },
+      { q: 'Чему равен sin(30°)?', opts: ['0.5', '0.707', '0.866', '1'], correct: 0, topic: 'trig' },
+      { q: 'Упростите: (a+b)²', opts: ['a²+b²', 'a²+2ab+b²', '2a+2b', 'a²-b²'], correct: 1, topic: 'linear' },
+      { q: 'Найдите интеграл ∫2x dx', opts: ['x²+C', '2x²+C', 'x+C', '2+C'], correct: 0, topic: 'derivatives' }
+    ],
+    init() {
+      App.state.test.current = 0;
+      App.state.test.answers = [];
+      App.state.test.score = 0;
+      this.render();
+    },
+    render() {
+      const q = this.pool[App.state.test.current];
+      const container = document.getElementById('question-container');
+      container.innerHTML = `
+        <p style="font-weight:600; margin-bottom:12px; font-size:1.05rem;">${App.state.test.current + 1}. ${q.q}</p>
+        ${q.opts.map((opt, i) => `
+          <div class="option" data-idx="${i}" onclick="App.testEngine.selectOption(this)">
+            <div class="option-radio"></div>
+            <span>${opt}</span>
+          </div>
+        `).join('')}
+      `;
+      document.getElementById('test-progress').textContent = `${App.state.test.current + 1}/${this.pool.length}`;
+      document.getElementById('test-bar').style.width = `${((App.state.test.current + 1) / this.pool.length) * 100}%`;
+      document.getElementById('btn-check-answer').disabled = true;
+      document.getElementById('btn-check-answer').textContent = 'Проверить ответ';
+      document.getElementById('btn-check-answer').onclick = () => this.checkAnswer();
+    },
+    selectOption(el) {
+      document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      App.state.test.selectedIdx = parseInt(el.dataset.idx);
+      document.getElementById('btn-check-answer').disabled = false;
+    },
+    checkAnswer() {
+      const q = this.pool[App.state.test.current];
+      const isCorrect = App.state.test.selectedIdx === q.correct;
+      if (isCorrect) App.state.test.score++;
+      App.state.test.answers.push({ topic: q.topic, correct: isCorrect });
+      
+      if (App.state.test.current < this.pool.length - 1) {
+        App.state.test.current++;
+        App.toast.show(isCorrect ? '✅ Верно!' : '❌ Ошибка. Разберём подробнее.', isCorrect ? 'success' : 'error');
+        this.render();
+      } else {
+        this.showResults();
+      }
+    },
+    showResults() {
+      const weak = App.state.test.answers.find(a => !a.correct)?.topic || 'linear';
+      App.router.navigate('ai-tutor');
+      App.ai.explain(weak);
+    }
+  },
+
+  // Имитация AI-разбора (Mock RAG)
+  ai: {
+    explain(topic) {
+      const responses = {
+        linear: {
+          error: 'Вы забыли перенести свободный член с противоположным знаком.',
+          algo: ['Перенесите +5 вправо: 2x = 13 - 5', 'Упростите: 2x = 8', 'Разделите на коэффициент: x = 4'],
+          tag: 'Алгебраические преобразования'
+        },
+        derivatives: {
+          error: 'Применили правило суммы вместо правила степени.',
+          algo: ['Формула: (xⁿ)\' = n·xⁿ⁻¹', 'Подставляем n=2: 2·x¹', 'Итог: f\'(x) = 2x'],
+          tag: 'Дифференцирование'
+        },
+        trig: {
+          error: 'Спутали значения синуса и косинуса для 30°.',
+          algo: ['Вспомните таблицу: sin30° = 1/2', 'cos30° = √3/2 ≈ 0.866', 'Проверьте через единичную окружность'],
+          tag: 'Тригонометрия'
+        }
+      };
+      const data = responses[topic] || responses.linear;
+      const box = document.getElementById('ai-response');
+      box.innerHTML = `
+        <p style="font-weight:600; margin-bottom:6px;">❌ Где была ошибка:</p>
+        <p>${data.error} <span class="tag">${data.tag}</span></p>
+        <div class="ai-box" style="margin-top:12px;">
+          <p style="font-weight:600; margin-bottom:6px;">✅ Правильный алгоритм:</p>
+          <ul>${data.algo.map(step => `<li>${step}</li>`).join('')}</ul>
+        </div>
+        <p class="mt-2" style="font-size:0.8rem; color:var(--text-muted);">💡 В полной версии здесь подключается YandexGPT + RAG-база ФИПИ с confidence-score.</p>
+      `;
+      this.typeEffect(box);
+      document.getElementById('practice-question').innerHTML = `
+        <div class="option" onclick="this.classList.toggle('selected')">Попробовать похожее задание...</div>
+      `;
+    },
+    typeEffect(el) {
+      el.classList.add('typing-cursor');
+      setTimeout(() => el.classList.remove('typing-cursor'), 1200);
+    }
+  },
+
+  // Генератор плана обучения
+  plan: {
+    generate() {
+      const list = document.getElementById('plan-list');
+      const today = new Date();
+      const tasks = [
+        { date: new Date(today.getTime() + 86400000), topic: 'Линейные уравнения', status: 'todo', xp: 30 },
+        { date: new Date(today.getTime() + 172800000), topic: 'Производные: практика', status: 'todo', xp: 40 },
+        { date: new Date(today.getTime() + 259200000), topic: 'Тригонометрия: повторение', status: 'done', xp: 20 }
+      ];
+      
+      list.innerHTML = tasks.map(t => `
+        <div class="topic-row" style="${t.status === 'done' ? 'opacity:0.6;' : ''}">
+          <div>
+            <div style="font-weight:600;">${t.topic}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">${this.formatDate(t.date)}</div>
+          </div>
+          <span class="badge ${t.status === 'done' ? 'badge-success' : ''}">${t.status === 'done' ? '✓' : `+${t.xp} XP`}</span>
+        </div>
+      `).join('');
+    },
+    formatDate(d) {
+      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    }
+  },
+
+  // Отрисовка графика прогресса
+  chart: {
+    draw() {
+      const container = document.getElementById('progress-chart');
+      if (!container) return;
+      container.innerHTML = '';
+      const weeks = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      const values = [30, 45, 35, 60, 55, 70, 85];
+      
+      weeks.forEach((label, i) => {
+        const bar = document.createElement('div');
+        bar.className = 'chart-bar';
+        bar.style.height = `${values[i]}%`;
+        bar.style.left = `${(i * 14) + 2}%`;
+        bar.style.width = '12%';
+        bar.style.background = i === 6 ? 'var(--secondary)' : 'var(--primary)';
+        
+        const labelEl = document.createElement('div');
+        labelEl.className = 'chart-label';
+        labelEl.style.left = `${(i * 14) + 2}%`;
+        labelEl.style.width = '12%';
+        labelEl.textContent = label;
+        
+        container.appendChild(bar);
+        container.appendChild(labelEl);
+      });
+      
+      // Анимация появления
+      setTimeout(() => {
+        document.querySelectorAll('.chart-bar').forEach((b, i) => {
+          b.style.height = '0%';
+          setTimeout(() => b.style.height = `${values[i]}%`, i * 100);
+        });
+      }, 100);
+    }
+  }
+};
+
+// Инициализация при готовности DOM
+document.addEventListener('DOMContentLoaded', () => {
+  App.init();
+  
+  // Обработчики навигации
+  document.getElementById('theme-toggle').addEventListener('click', () => App.theme.toggle());
+  document.getElementById('profile-btn').addEventListener('click', () => App.router.navigate('settings'));
+  
+  // Предотвращение масштабирования на iOS
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('dblclick', e => e.preventDefault());
+  
+  console.log('🎓 AI-Tutor MVP Demo Ready');
+});
+</script>
+</body>
+</html>
